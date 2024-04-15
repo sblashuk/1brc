@@ -216,6 +216,7 @@
                 <!-- Cliff asked to be named as the copyright holder for his entry; -->
                 <exclude>src/main/java/dev/morling/onebrc/CalculateAverage_cliffclick.java</exclude>
                 <exclude>.sdkmanrc</exclude>
+                <exclude>my-results.txt</exclude>
               </excludes>
             </configuration>
             <executions>

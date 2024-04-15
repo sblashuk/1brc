@@ -16,4 +16,4 @@
 #
 
 JAVA_OPTS=""
-java $JAVA_OPTS --class-path target/average-1.0.0-SNAPSHOT.jar dev.morling.onebrc.CalculateAverage_sblashuk
+java $JAVA_OPTS --class-path target/average-1.0.0-SNAPSHOT.jar --enable-preview dev.morling.onebrc.CalculateAverage_sblashuk

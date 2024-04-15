@@ -56,3 +56,5 @@ yonatang;Yonatan Graber
 adriacabeza;Adrià Cabeza
 AlexanderYastrebov;Alexander Yastrebov
 elh;Eugene Huang
+sblashuk;Siarhei Blashuk
+v2;Siarhei Blashuk

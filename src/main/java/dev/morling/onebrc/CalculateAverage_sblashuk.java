@@ -15,78 +15,108 @@
  */
 package dev.morling.onebrc;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.stream.Collector;
-
-import static java.util.stream.Collectors.*;
 
 public class CalculateAverage_sblashuk {
 
+    public static final String SPLIT_SYMBOL = ";";
+    public static final int BUFFER_SIZE = 8192;
+
+    private static class Measurements {
+        private final double min;
+        private final double max;
+        private final double sum;
+        private final long count;
+
+        public Measurements(double min, double max, double sum, long count) {
+            this.min = min;
+            this.max = max;
+            this.sum = sum;
+            this.count = count;
+        }
+
+        public double getMin() {
+            return min;
+        }
+
+        public double getMax() {
+            return max;
+        }
+
+        public double getSum() {
+            return sum;
+        }
+
+        public long getCount() {
+            return count;
+        }
+    }
+
+    private static record MeasurementsResult(double min, double mean, double max) {
+		public String toString() {
+			return STR."\{round(min)}/\{round(mean)}/\{round(max)}";
+		}
+
+		private double round(double value) {
+			return Math.round(value * 10.0) / 10.0;
+		}
+	}
+
+    private static class ParsedMeasurements {
+        private final String name;
+        private final Double value;
+
+        public ParsedMeasurements(String row) {
+            int i = row.indexOf(';');
+            this.name = row.substring(0, i);
+            this.value = Double.parseDouble(row.substring(i + 1));
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Double getValue() {
+            return value;
+        }
+    }
+
     private static final String FILE = "./measurements.txt";
 
-    private static record Measurement(String station, double value) {
-        private Measurement(String[] parts) {
-            this(parts[0], Double.parseDouble(parts[1]));
-        }
-    }
-
-    private static record ResultRow(double min, double mean, double max) {
-
-        public String toString() {
-            return round(min) + "/" + round(mean) + "/" + round(max);
-        }
-
-        private double round(double value) {
-            return Math.round(value * 10.0) / 10.0;
-        }
-    };
-
-    private static class MeasurementAggregator {
-        private double min = Double.POSITIVE_INFINITY;
-        private double max = Double.NEGATIVE_INFINITY;
-        private double sum;
-        private long count;
-    }
-
     public static void main(String[] args) throws IOException {
-        // Map<String, Double> measurements1 = Files.lines(Paths.get(FILE))
-        // .map(l -> l.split(";"))
-        // .collect(groupingBy(m -> m[0], averagingDouble(m -> Double.parseDouble(m[1]))));
-        //
-        // measurements1 = new TreeMap<>(measurements1.entrySet()
-        // .stream()
-        // .collect(toMap(e -> e.getKey(), e -> Math.round(e.getValue() * 10.0) / 10.0)));
-        // System.out.println(measurements1);
+        parseV1();
+    }
 
-        Collector<Measurement, MeasurementAggregator, ResultRow> collector = Collector.of(
-                MeasurementAggregator::new,
-                (a, m) -> {
-                    a.min = Math.min(a.min, m.value);
-                    a.max = Math.max(a.max, m.value);
-                    a.sum += m.value;
-                    a.count++;
-                },
-                (agg1, agg2) -> {
-                    var res = new MeasurementAggregator();
-                    res.min = Math.min(agg1.min, agg2.min);
-                    res.max = Math.max(agg1.max, agg2.max);
-                    res.sum = agg1.sum + agg2.sum;
-                    res.count = agg1.count + agg2.count;
+    public static void parseV1() throws IOException {
+        Map<String, Measurements> measurementsAggregation = new HashMap<>();
+        Map<String, MeasurementsResult> result = new TreeMap<>();
 
-                    return res;
-                },
-                agg -> {
-                    return new ResultRow(agg.min, (Math.round(agg.sum * 10.0) / 10.0) / agg.count, agg.max);
-                });
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILE), BUFFER_SIZE)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                ParsedMeasurements parsedMeasurements = new ParsedMeasurements(line);
 
-        Map<String, ResultRow> measurements = new TreeMap<>(Files.lines(Paths.get(FILE))
-                .map(l -> new Measurement(l.split(";")))
-                .collect(groupingBy(m -> m.station(), collector)));
+                measurementsAggregation.compute(parsedMeasurements.getName(),
+                        (key, existingMeasurements) -> aggregate(parsedMeasurements, existingMeasurements));
+            }
+        }
+        measurementsAggregation
+                .forEach((key, value) -> result.put(key, new MeasurementsResult(value.min, (Math.round(value.sum * 10.0) / 10.0) / value.count, value.max)));
+        System.out.println(result);
+    }
 
-        System.out.println(measurements);
+    public static Measurements aggregate(ParsedMeasurements parsedMeasurements, Measurements existingMeasurements) {
+        if (existingMeasurements == null) {
+            return new Measurements(Math.min(Double.POSITIVE_INFINITY, parsedMeasurements.getValue()),
+                    Math.max(Double.NEGATIVE_INFINITY, parsedMeasurements.getValue()), parsedMeasurements.getValue(), 1);
+        }
+        return new Measurements(Math.min(existingMeasurements.min, parsedMeasurements.getValue()),
+                Math.max(existingMeasurements.max, parsedMeasurements.getValue()), existingMeasurements.getSum() + parsedMeasurements.getValue(),
+                existingMeasurements.getCount() + 1);
     }
 }
