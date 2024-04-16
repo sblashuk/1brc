@@ -27,45 +27,15 @@ public class CalculateAverage_sblashuk {
     public static final String SPLIT_SYMBOL = ";";
     public static final int BUFFER_SIZE = 8192;
 
-    private static class Measurements {
-        private final double min;
-        private final double max;
-        private final double sum;
-        private final long count;
-
-        public Measurements(double min, double max, double sum, long count) {
-            this.min = min;
-            this.max = max;
-            this.sum = sum;
-            this.count = count;
-        }
-
-        public double getMin() {
-            return min;
-        }
-
-        public double getMax() {
-            return max;
-        }
-
-        public double getSum() {
-            return sum;
-        }
-
-        public long getCount() {
-            return count;
-        }
-    }
-
-    private static record MeasurementsResult(double min, double mean, double max) {
+    private record Measurements(double min, double max, double sum, long count) {
 		public String toString() {
-			return STR."\{round(min)}/\{round(mean)}/\{round(max)}";
-		}
+				return STR."\{round(min)}/\{round((Math.round(sum * 10.0) / 10.0) / count)}/\{round(max)}";
+			}
 
-		private double round(double value) {
-			return Math.round(value * 10.0) / 10.0;
+			private double round(double value) {
+				return Math.round(value * 10.0) / 10.0;
+			}
 		}
-	}
 
     private static class ParsedMeasurements {
         private final String name;
@@ -74,7 +44,8 @@ public class CalculateAverage_sblashuk {
         public ParsedMeasurements(String row) {
             int i = row.indexOf(';');
             this.name = row.substring(0, i);
-            this.value = Double.parseDouble(row.substring(i + 1));
+            String valueStr = row.substring(i + 1);
+            this.value = Double.parseDouble(valueStr);
         }
 
         public String getName() {
@@ -89,12 +60,7 @@ public class CalculateAverage_sblashuk {
     private static final String FILE = "./measurements.txt";
 
     public static void main(String[] args) throws IOException {
-        parseV1();
-    }
-
-    public static void parseV1() throws IOException {
         Map<String, Measurements> measurementsAggregation = new HashMap<>();
-        Map<String, MeasurementsResult> result = new TreeMap<>();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE), BUFFER_SIZE)) {
             String line;
@@ -105,9 +71,7 @@ public class CalculateAverage_sblashuk {
                         (key, existingMeasurements) -> aggregate(parsedMeasurements, existingMeasurements));
             }
         }
-        measurementsAggregation
-                .forEach((key, value) -> result.put(key, new MeasurementsResult(value.min, (Math.round(value.sum * 10.0) / 10.0) / value.count, value.max)));
-        System.out.println(result);
+        System.out.println(new TreeMap<>(measurementsAggregation));
     }
 
     public static Measurements aggregate(ParsedMeasurements parsedMeasurements, Measurements existingMeasurements) {
@@ -116,7 +80,7 @@ public class CalculateAverage_sblashuk {
                     Math.max(Double.NEGATIVE_INFINITY, parsedMeasurements.getValue()), parsedMeasurements.getValue(), 1);
         }
         return new Measurements(Math.min(existingMeasurements.min, parsedMeasurements.getValue()),
-                Math.max(existingMeasurements.max, parsedMeasurements.getValue()), existingMeasurements.getSum() + parsedMeasurements.getValue(),
-                existingMeasurements.getCount() + 1);
+                Math.max(existingMeasurements.max, parsedMeasurements.getValue()), existingMeasurements.sum() + parsedMeasurements.getValue(),
+                existingMeasurements.count() + 1);
     }
 }
