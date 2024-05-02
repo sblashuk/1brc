@@ -1,5 +1,6 @@
-| # | Result (m:s.ms) | Implementation     | JDK             | Notes     |
-|---|-----------------|--------------------|-----------------|-----------|
-| 1 | 02:06.461       |                    | 21.0.1-open     | baseline  |
-| 2 | 01:38.821       |                    | 21.0.1-open     | buffer    |
-| 3 | 01:32.845       |                    | 21.0.1-open     | buffer    |
+| # | Result (m:s.ms) | Implementation     | JDK             | Notes                  |
+|---|-----------------|--------------------|-----------------|------------------------|
+| 1 | 02:06.461       | sblashuk           | 21.0.1-open     | baseline               |
+| 2 | 01:38.821       | sblashuk           | 21.0.1-open     | buffer                 |
+| 3 | 01:32.845       | sblashuk           | 21.0.1-open     | buffer                 |
+| 3 | 00:32.554       | sblashuk           | 21.0.1-open     | 16 threads + buffer    |
